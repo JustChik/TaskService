@@ -1,0 +1,11 @@
+{
+  "db": {
+    "host": "localhost",
+    "user": "postgres",
+    "password":  "postgres",
+    "db_name": "postgres",
+    "port":  5432
+  },
+  "key": "bko8XvX",
+  "users_table_name": "tasks"
+}
