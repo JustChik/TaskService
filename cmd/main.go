@@ -39,7 +39,7 @@ func main() {
 	//	fmt.Errorf("Ошибка %v", err)
 	//}
 	//r := comments.CreateCommentRequest{
-	//	Task_id: uuidID,
+	//	TaskID: uuidID,
 	//	Text:    "Проверка коментариев",
 	//}
 	res, err := commentService.GetComments()
@@ -56,7 +56,7 @@ func main() {
 	//	fmt.Errorf("Ошибка %v", err)
 	//}
 	//r := tasks.CreateTaskRequest{
-	//	User_id:     uuidID,
+	//	UserID:     uuidID,
 	//	Tittle:      "2",
 	//	Description: "Проверить функцию ChangeTask",
 	//}

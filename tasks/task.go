@@ -26,7 +26,7 @@ type (
 		Status      Status
 	}
 	CreateTaskRequest struct {
-		User_id     uuid.UUID
+		UserID      uuid.UUID
 		Tittle      string
 		Description string
 	}
@@ -44,7 +44,7 @@ type (
 	}
 )
 
-func NewTask(db *sql.DB, tableName string) *TaskService {
+func NewService(db *sql.DB, tableName string) *TaskService {
 	return &TaskService{
 		db:        db,
 		tableName: tableName,
@@ -54,7 +54,7 @@ func NewTask(db *sql.DB, tableName string) *TaskService {
 func (t *TaskService) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error) {
 	id := uuid.New()
 	status := StatusOpen
-	_, err := t.db.Exec(fmt.Sprintf("INSERT INTO %s (id,tittle,description,status,user_id) VALUES ($1,$2,$3,$4,$5);", t.tableName), id.String(), taskCreate.Tittle, taskCreate.Description, status, taskCreate.User_id)
+	_, err := t.db.Exec(fmt.Sprintf("INSERT INTO %s (id,tittle,description,status,user_id) VALUES ($1,$2,$3,$4,$5);", t.tableName), id.String(), taskCreate.Tittle, taskCreate.Description, status, taskCreate.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("can't create new taskCreate %v", err)
 	}
@@ -78,14 +78,12 @@ func (t *TaskService) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
 	}, nil
 }
 
-func (t *TaskService) ChangeStatus(changeStatus ChangeStatusRequest) (*Task, error) {
+func (t *TaskService) ChangeStatus(changeStatus ChangeStatusRequest) (Status, error) {
 	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET status=$1 WHERE id=$2;", t.tableName), changeStatus.Status, changeStatus.Id)
 	if err != nil {
-		return nil, fmt.Errorf("can't change Status %v", err)
+		return "", fmt.Errorf("can't change Status %v", err)
 	}
-	return &Task{
-		Status: changeStatus.Status,
-	}, nil
+	return changeStatus.Status, nil
 }
 
 func (t *TaskService) GetTasks(filters map[string]string) ([]Task, error) {
