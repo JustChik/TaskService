@@ -24,7 +24,6 @@ type (
 		Tittle      string
 		Description string
 		Status      Status
-		Comment     string
 	}
 	CreateTaskRequest struct {
 		User_id     uuid.UUID
@@ -52,7 +51,6 @@ func NewTask(db *sql.DB, tableName string) *TaskService {
 	}
 }
 
-// почистить
 func (t *TaskService) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error) {
 	id := uuid.New()
 	status := StatusOpen
@@ -69,7 +67,7 @@ func (t *TaskService) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error)
 }
 
 func (t *TaskService) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
-	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET Tittle = $1, discription=$2 WHERE Id=$3", t.tableName), taskChange.Tittle, taskChange.Description, taskChange.Id)
+	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET tittle = $1, description = $2 WHERE id=$3;", t.tableName), taskChange.Tittle, taskChange.Description, taskChange.Id)
 	if err != nil {
 		return nil, fmt.Errorf("can't change task %v", err)
 	}
@@ -81,7 +79,7 @@ func (t *TaskService) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
 }
 
 func (t *TaskService) ChangeStatus(changeStatus ChangeStatusRequest) (*Task, error) {
-	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET Status=$1 WHERE Id=$2", t.tableName), changeStatus.Status, changeStatus.Id)
+	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET status=$1 WHERE id=$2;", t.tableName), changeStatus.Status, changeStatus.Id)
 	if err != nil {
 		return nil, fmt.Errorf("can't change Status %v", err)
 	}
@@ -91,7 +89,7 @@ func (t *TaskService) ChangeStatus(changeStatus ChangeStatusRequest) (*Task, err
 }
 
 func (t *TaskService) GetTasks(filters map[string]string) ([]Task, error) {
-	query := fmt.Sprintf("SELECT Id,Tittle,discription,Status,comment FROM %s WHERE 1=1", t.tableName)
+	query := fmt.Sprintf("SELECT id,tittle,description,status FROM %s WHERE 1=1", t.tableName)
 	if len(filters) > 0 {
 		query += " AND "
 		for k, val := range filters {
@@ -107,7 +105,7 @@ func (t *TaskService) GetTasks(filters map[string]string) ([]Task, error) {
 	u := Task{}
 	all := []Task{}
 	for res.Next() {
-		err := res.Scan(&u.Id, &u.Tittle, &u.Description, &u.Status, &u.Comment)
+		err := res.Scan(&u.Id, &u.Tittle, &u.Description, &u.Status)
 		if err != nil {
 			return nil, fmt.Errorf("can't read storage response %v", err)
 		}

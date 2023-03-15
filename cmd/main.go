@@ -1,12 +1,12 @@
 package main
 
 import (
+	"TaskService/comments"
+	_ "TaskService/comments"
 	"TaskService/storage"
-	"TaskService/tasks"
 	_ "TaskService/tasks"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"log"
 	"os"
@@ -14,9 +14,11 @@ import (
 
 type (
 	Config struct {
-		DB             storage.ConnectionConfig `json:"db"`
-		Key            string                   `json:"key"`
-		UsersTableName string                   `json:"users_table_name"`
+		DB                storage.ConnectionConfig `json:"db"`
+		Key               string                   `json:"key"`
+		UsersTableName    string                   `json:"users_table_name"`
+		TasksTableName    string                   `json:"tasks_table_name"`
+		CommentsTableName string                   `json:"comments_table_name"`
 	}
 )
 
@@ -30,21 +32,42 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	taskService := tasks.NewTask(db, config.UsersTableName)
-	uuidID, err := uuid.Parse("2fd134a9-85ec-44cd-9606-020354f03e9f")
-	if err != nil {
-		fmt.Println("Ошибка")
-	}
-	r := tasks.CreateTaskRequest{
-		User_id:     uuidID,
-		Tittle:      "Первая заметка",
-		Description: "Сделать такс менеджер",
-	}
-	_, err = taskService.CreateNewTask(r)
+
+	commentService := comments.NewComment(db, config.CommentsTableName)
+	//uuidID, err := uuid.Parse("67f571be-634e-48dd-a0af-204e42bea3cb")
+	//if err != nil {
+	//	fmt.Errorf("Ошибка %v", err)
+	//}
+	//r := comments.CreateCommentRequest{
+	//	Task_id: uuidID,
+	//	Text:    "Проверка коментариев",
+	//}
+	res, err := commentService.GetComments()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("Заметка создана")
+	fmt.Println(res)
+
+	//ТЕСТЫ ТАСОК
+
+	//taskService := tasks.NewTask(db, config.UsersTableName)
+	//uuidID, err := uuid.Parse("2fd134a9-85ec-44cd-9606-020354f03e9f")
+	//if err != nil {
+	//	fmt.Errorf("Ошибка %v", err)
+	//}
+	//r := tasks.CreateTaskRequest{
+	//	User_id:     uuidID,
+	//	Tittle:      "2",
+	//	Description: "Проверить функцию ChangeTask",
+	//}
+	//
+	//_, err = taskService.CreateNewTask(r)
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//fmt.Println("Заметка изменина")
+
+	//ТЕСТЫ ЮЗЕРОВ
 
 	//userService := users.NewService(db, config.UsersTableName, config.Key)
 	//taskService := tasks.NewTask(db, "tasks")

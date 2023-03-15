@@ -7,5 +7,7 @@
     "port":  5432
   },
   "key": "bko8XvX",
-  "users_table_name": "tasks"
+  "users_table_name": "users",
+  "tasks_table_name": "tasks",
+  "comments_table_name": "comments"
 }
