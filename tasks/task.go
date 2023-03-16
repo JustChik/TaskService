@@ -15,7 +15,7 @@ const (
 )
 
 type (
-	TaskService struct {
+	Service struct {
 		db        *sql.DB
 		tableName string
 	}
@@ -44,14 +44,14 @@ type (
 	}
 )
 
-func NewService(db *sql.DB, tableName string) *TaskService {
-	return &TaskService{
+func NewService(db *sql.DB, tableName string) *Service {
+	return &Service{
 		db:        db,
 		tableName: tableName,
 	}
 }
 
-func (t *TaskService) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error) {
+func (t *Service) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error) {
 	id := uuid.New()
 	status := StatusOpen
 	_, err := t.db.Exec(fmt.Sprintf("INSERT INTO %s (id,tittle,description,status,user_id) VALUES ($1,$2,$3,$4,$5);", t.tableName), id.String(), taskCreate.Tittle, taskCreate.Description, status, taskCreate.UserID)
@@ -66,7 +66,7 @@ func (t *TaskService) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error)
 	}, nil
 }
 
-func (t *TaskService) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
+func (t *Service) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
 	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET tittle = $1, description = $2 WHERE id=$3;", t.tableName), taskChange.Tittle, taskChange.Description, taskChange.Id)
 	if err != nil {
 		return nil, fmt.Errorf("can't change task %v", err)
@@ -78,7 +78,7 @@ func (t *TaskService) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
 	}, nil
 }
 
-func (t *TaskService) ChangeStatus(changeStatus ChangeStatusRequest) (Status, error) {
+func (t *Service) ChangeStatus(changeStatus ChangeStatusRequest) (Status, error) {
 	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET status=$1 WHERE id=$2;", t.tableName), changeStatus.Status, changeStatus.Id)
 	if err != nil {
 		return "", fmt.Errorf("can't change Status %v", err)
@@ -86,7 +86,7 @@ func (t *TaskService) ChangeStatus(changeStatus ChangeStatusRequest) (Status, er
 	return changeStatus.Status, nil
 }
 
-func (t *TaskService) GetTasks(filters map[string]string) ([]Task, error) {
+func (t *Service) GetTasks(filters map[string]string) ([]Task, error) {
 	query := fmt.Sprintf("SELECT id,tittle,description,status FROM %s WHERE 1=1", t.tableName)
 	if len(filters) > 0 {
 		query += " AND "

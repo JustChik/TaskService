@@ -1,9 +1,9 @@
 package main
 
 import (
-	"TaskService/comments"
 	_ "TaskService/comments"
 	"TaskService/storage"
+	"TaskService/tasks"
 	_ "TaskService/tasks"
 	"encoding/json"
 	"fmt"
@@ -33,7 +33,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	commentService := comments.NewComment(db, config.CommentsTableName)
+	// Проверка Comment
+	//commentService := comments.NewComment(db, config.CommentsTableName)
 	//uuidID, err := uuid.Parse("67f571be-634e-48dd-a0af-204e42bea3cb")
 	//if err != nil {
 	//	fmt.Errorf("Ошибка %v", err)
@@ -42,30 +43,30 @@ func main() {
 	//	TaskID: uuidID,
 	//	Text:    "Проверка коментариев",
 	//}
-	res, err := commentService.GetComments()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	fmt.Println(res)
+	//res, err := commentService.GetComments()
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+	//fmt.Println(res)
 
 	//ТЕСТЫ ТАСОК
 
-	//taskService := tasks.NewTask(db, config.UsersTableName)
-	//uuidID, err := uuid.Parse("2fd134a9-85ec-44cd-9606-020354f03e9f")
+	taskService := tasks.NewService(db, config.TasksTableName)
+	//uuidID, err := uuid.Parse("67f571be-634e-48dd-a0af-204e42bea3cb")
 	//if err != nil {
 	//	fmt.Errorf("Ошибка %v", err)
 	//}
 	//r := tasks.CreateTaskRequest{
-	//	UserID:     uuidID,
+	//	UserID:      uuidID,
 	//	Tittle:      "2",
 	//	Description: "Проверить функцию ChangeTask",
 	//}
-	//
-	//_, err = taskService.CreateNewTask(r)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//fmt.Println("Заметка изменина")
+	r := map[string]string{"description": "Пр"}
+	res, err := taskService.GetTasks(r)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println(res)
 
 	//ТЕСТЫ ЮЗЕРОВ
 

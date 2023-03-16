@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	CommentService struct {
+	Service struct {
 		db        *sql.DB
 		tableName string
 	}
@@ -29,14 +29,14 @@ type (
 	}
 )
 
-func NewComment(db *sql.DB, tableName string) *CommentService {
-	return &CommentService{
+func NewComment(db *sql.DB, tableName string) *Service {
+	return &Service{
 		db:        db,
 		tableName: tableName,
 	}
 }
 
-func (c *CommentService) CreateNewComment(commentCreate CreateCommentRequest) (*Comment, error) {
+func (c *Service) CreateNewComment(commentCreate CreateCommentRequest) (*Comment, error) {
 	id := uuid.New()
 	_, err := c.db.Exec(fmt.Sprintf("INSERT INTO %s (id,text,task_id) VALUES ($1,$2,$3);", c.tableName), id.String(), commentCreate.Text, commentCreate.TaskID)
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *CommentService) CreateNewComment(commentCreate CreateCommentRequest) (*
 	return nil, nil
 }
 
-func (c *CommentService) GetComments() ([]GetCommentRequest, error) {
+func (c *Service) GetComments() ([]GetCommentRequest, error) {
 	all, err := c.db.Query(fmt.Sprintf("SELECT text, date FROM %s ORDER BY date ASC;", c.tableName))
 	if err != nil {
 		return nil, fmt.Errorf("can't get commets %v", err)
