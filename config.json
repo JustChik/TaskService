@@ -9,5 +9,6 @@
   "key": "bko8XvX",
   "users_table_name": "users",
   "tasks_table_name": "tasks",
-  "comments_table_name": "comments"
+  "comments_table_name": "comments",
+  "http_port": 8000
 }
