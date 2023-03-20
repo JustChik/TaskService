@@ -34,12 +34,14 @@ type (
 	Status string
 
 	ChangeTaskRequest struct {
-		Id          uuid.UUID
+		IDUser      uuid.UUID
+		IDTask      uuid.UUID
 		Tittle      string
 		Description string
 	}
 	ChangeStatusRequest struct {
-		Id     uuid.UUID
+		IDUser uuid.UUID
+		IDTask uuid.UUID
 		Status Status
 	}
 )
@@ -67,19 +69,19 @@ func (t *Service) CreateNewTask(taskCreate CreateTaskRequest) (*Task, error) {
 }
 
 func (t *Service) ChangeTask(taskChange ChangeTaskRequest) (*Task, error) {
-	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET tittle = $1, description = $2 WHERE id=$3;", t.tableName), taskChange.Tittle, taskChange.Description, taskChange.Id)
+	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET tittle = $1, description = $2 WHERE id = $3 AND user_id = $4;", t.tableName), taskChange.Tittle, taskChange.Description, taskChange.IDTask, taskChange.IDUser)
 	if err != nil {
 		return nil, fmt.Errorf("can't change task %v", err)
 	}
 	return &Task{
-		Id:          taskChange.Id,
+		Id:          taskChange.IDTask,
 		Tittle:      taskChange.Tittle,
 		Description: taskChange.Description,
 	}, nil
 }
 
 func (t *Service) ChangeStatus(changeStatus ChangeStatusRequest) (Status, error) {
-	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET status=$1 WHERE id=$2;", t.tableName), changeStatus.Status, changeStatus.Id)
+	_, err := t.db.Exec(fmt.Sprintf("UPDATE %s SET status = $1 WHERE id = $2 AND user_id = $3;", t.tableName), changeStatus.Status, changeStatus.IDTask, changeStatus.IDUser)
 	if err != nil {
 		return "", fmt.Errorf("can't change Status %v", err)
 	}

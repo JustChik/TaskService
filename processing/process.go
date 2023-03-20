@@ -26,11 +26,13 @@ type (
 	}
 
 	ChangeTaskRequest struct {
-		Id          uuid.UUID
+		IDUser      uuid.UUID
+		IDTask      uuid.UUID
 		Tittle      string
 		Description string
 	}
 	ChangeStatusRequest struct {
+		TaskID uuid.UUID
 		Status tasks.Status
 	}
 	ChekTask struct {
@@ -80,12 +82,14 @@ func (p *Service) CreateTask(user UserInfo, taskInfo TaskInfo) (*tasks.Task, err
 }
 
 func (p *Service) ChangeTask(user UserInfo, taskChange ChangeTaskRequest) (*tasks.Task, error) {
-	taskUser, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
+	_, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
 	if err != nil {
 		return nil, fmt.Errorf("can't change task %v", err)
 	}
+
 	return p.tasksSVC.ChangeTask(tasks.ChangeTaskRequest{
-		Id:          taskUser.ID,
+		IDUser:      taskChange.IDUser,
+		IDTask:      taskChange.IDTask,
 		Tittle:      taskChange.Tittle,
 		Description: taskChange.Description,
 	})
@@ -97,7 +101,8 @@ func (p *Service) ChangeTaskStatus(user UserInfo, statusChange ChangeStatusReque
 		return "", fmt.Errorf("can't change task %v", err)
 	}
 	return p.tasksSVC.ChangeStatus(tasks.ChangeStatusRequest{
-		Id:     statusUser.ID,
+		IDUser: statusUser.ID,
+		IDTask: statusChange.TaskID,
 		Status: statusChange.Status,
 	})
 }
