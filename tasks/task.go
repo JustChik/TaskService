@@ -91,11 +91,17 @@ func (t *Service) ChangeStatus(changeStatus ChangeStatusRequest) (Status, error)
 func (t *Service) GetTasks(filters map[string]string) ([]Task, error) {
 	query := fmt.Sprintf("SELECT id,tittle,description,status FROM %s WHERE 1=1", t.tableName)
 	if len(filters) > 0 {
-		query += " AND "
 		for k, val := range filters {
-			query += fmt.Sprintf("%s LIKE '%%%s%%'", k, val)
+			query += " AND "
+			if k == "user_id" || k == "id" {
+				query += fmt.Sprintf("%s = '%s' ", k, val)
+			} else {
+				query += fmt.Sprintf("%s LIKE '%%%s%%'", k, val)
+			}
+
 		}
 	}
+
 	query += ";"
 	res, err := t.db.Query(query)
 	if err != nil {

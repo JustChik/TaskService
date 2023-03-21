@@ -45,6 +45,12 @@ type (
 	GetCommentRequst struct {
 		TaskID uuid.UUID
 	}
+
+	GetTasksRequest struct {
+		Tittle      string
+		Description string
+		Status      tasks.Status
+	}
 )
 
 func NewService(usersSVC *users.Service, tasksSVC *tasks.Service, commentsSVC *comments.Service) *Service {
@@ -106,21 +112,28 @@ func (p *Service) ChangeTaskStatus(user UserInfo, statusChange ChangeStatusReque
 		Status: statusChange.Status,
 	})
 }
-func (p *Service) GetTasks(user UserInfo, filters map[string]string) ([]tasks.Task, error) {
-	_, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
+func (p *Service) GetTasks(user UserInfo, req GetTasksRequest) ([]tasks.Task, error) {
+	u, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
 	if err != nil {
 		return nil, fmt.Errorf("can't get tasks %v", err)
 	}
+
+	filters := map[string]string{
+		"user_id": u.ID.String(),
+	}
+	additionalFilters := req.toMap()
+	mergeMaps(filters, additionalFilters)
+
 	return p.tasksSVC.GetTasks(filters)
 }
 
-func (p *Service) CreateComment(user UserInfo, task ChekTask, createComment CreateCommentRequest) (*comments.Comment, error) {
+func (p *Service) CreateComment(user UserInfo, createComment CreateCommentRequest) (*comments.Comment, error) {
 	commentUser, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
 	if err != nil {
 		return nil, fmt.Errorf("can't get user %v", err)
 	}
 	commentTask, err := p.tasksSVC.GetTasks(map[string]string{
-		"id":      task.TaskID.String(),
+		"id":      createComment.TaskID.String(),
 		"user_id": commentUser.ID.String(),
 	})
 	if err != nil {
@@ -132,19 +145,20 @@ func (p *Service) CreateComment(user UserInfo, task ChekTask, createComment Crea
 	}
 
 	createComment.TaskID = commentTask[0].Id
+
 	return p.commentsSVC.CreateNewComment(comments.CreateCommentRequest{
 		TaskID: createComment.TaskID,
 		Text:   createComment.Text,
 	})
 }
 
-func (p *Service) GetComments(user UserInfo, task ChekTask, getComment GetCommentRequst) ([]comments.GetCommentRequest, error) {
+func (p *Service) GetComments(user UserInfo, getComment GetCommentRequst) ([]comments.GetCommentRequest, error) {
 	commentUser, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
 	if err != nil {
 		return nil, fmt.Errorf("can't get comments %v", err)
 	}
 	commentTask, err := p.tasksSVC.GetTasks(map[string]string{
-		"id":      task.TaskID.String(),
+		"id":      getComment.TaskID.String(),
 		"user_id": commentUser.ID.String(),
 	})
 	if err != nil {
@@ -157,4 +171,26 @@ func (p *Service) GetComments(user UserInfo, task ChekTask, getComment GetCommen
 
 	getComment.TaskID = commentTask[0].Id
 	return p.commentsSVC.GetComments(getComment.TaskID)
+}
+
+func (r GetTasksRequest) toMap() map[string]string {
+	result := make(map[string]string)
+	if r.Tittle != "" {
+		result["tittle"] = r.Tittle
+	}
+	if r.Description != "" {
+		result["description"] = r.Description
+	}
+	if r.Status != "" {
+		result["status"] = string(r.Status)
+	}
+
+	return result
+}
+
+// mergeMaps adds key -> value pairs from new map to old
+func mergeMaps(old, new map[string]string) {
+	for k, v := range new {
+		old[k] = v
+	}
 }

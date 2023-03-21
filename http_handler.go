@@ -1,6 +1,7 @@
 package TaskService
 
 import (
+	"TaskService/comments"
 	"TaskService/processing"
 	"TaskService/tasks"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type AppHandler struct {
@@ -29,6 +31,9 @@ func (app *AppHandler) SetHandlersToMux(mux *http.ServeMux) {
 	mux.HandleFunc("/tasks/create", app.handleCreateTask)
 	mux.HandleFunc("/tasks/change/task", app.handleChangeTask)
 	mux.HandleFunc("/tasks/change/status", app.handleChangeStatus)
+	mux.HandleFunc("/tasks/get/task", app.handleGetTask)
+	mux.HandleFunc("/tasks/create/comment", app.handleCreateComment)
+	mux.HandleFunc("/tasks/get/comment", app.handleGetComments)
 }
 
 func (app *AppHandler) handleCreateUser(w http.ResponseWriter, req *http.Request) {
@@ -375,5 +380,220 @@ func (app *AppHandler) handleChangeStatus(w http.ResponseWriter, req *http.Reque
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	w.Write(response)
+}
+
+func (app *AppHandler) handleGetTask(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	auth := req.Header.Get("Authorization")
+	auth = strings.ReplaceAll(auth, "Basic ", "")
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	authSlice := strings.Split(string(decodedAuth), ":")
+	if len(authSlice) < 2 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	username := authSlice[0]
+	pass := authSlice[1]
+
+	type getTaskRequest struct {
+		Tittle      string       `json:"tittle"`
+		Description string       `json:"description"`
+		Status      tasks.Status `json:"status"`
+	}
+
+	rawBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	getReq := getTaskRequest{}
+
+	if err = json.Unmarshal(rawBody, &getReq); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	result, err := app.proc.GetTasks(processing.UserInfo{
+		UserName: username,
+		UserPass: pass,
+	}, processing.GetTasksRequest{
+		Tittle:      getReq.Tittle,
+		Description: getReq.Description,
+		Status:      getReq.Status,
+	})
+
+	if err != nil {
+		fmt.Printf("Can not get task: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	all := []tasks.Task{}
+	for _, el := range result {
+		all = append(all, el)
+	}
+	response, err := json.Marshal(&all)
+	if err != nil {
+		fmt.Printf("Can not marshal response whith getting task: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (app *AppHandler) handleCreateComment(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	auth := req.Header.Get("Authorization")
+	auth = strings.ReplaceAll(auth, "Basic ", "")
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	authSlice := strings.Split(string(decodedAuth), ":")
+	if len(authSlice) < 2 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	username := authSlice[0]
+	pass := authSlice[1]
+
+	type createCommentRequest struct {
+		TaskID uuid.UUID `json:"task_id"`
+		Text   string    `json:"text"`
+	}
+
+	rawBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	createReq := createCommentRequest{}
+	if err = json.Unmarshal(rawBody, &createReq); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	result, err := app.proc.CreateComment(processing.UserInfo{
+		UserName: username,
+		UserPass: pass,
+	}, processing.CreateCommentRequest{
+		TaskID: createReq.TaskID,
+		Text:   createReq.Text,
+	})
+
+	if err != nil {
+		fmt.Printf("Can not create comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	type createCommentResponse struct {
+		Id     uuid.UUID
+		Text   string
+		Data   time.Time
+		TaskID uuid.UUID
+	}
+
+	r := createCommentResponse{
+		Id:     result.Id,
+		Text:   result.Text,
+		Data:   result.Data,
+		TaskID: result.TaskID,
+	}
+
+	response, err := json.Marshal(&r)
+	if err != nil {
+		fmt.Printf("Can not marshal response whith creating comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (app *AppHandler) handleGetComments(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	auth := req.Header.Get("Authorization")
+	auth = strings.ReplaceAll(auth, "Basic ", "")
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	authSlice := strings.Split(string(decodedAuth), ":")
+	if len(authSlice) < 2 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	username := authSlice[0]
+	pass := authSlice[1]
+
+	type getCommentRequest struct {
+		TaskID uuid.UUID `json:"task_id"`
+	}
+
+	rawBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	getReq := getCommentRequest{}
+	if err = json.Unmarshal(rawBody, &getReq); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	result, err := app.proc.GetComments(processing.UserInfo{
+		UserName: username,
+		UserPass: pass,
+	}, processing.GetCommentRequst{
+		TaskID: getReq.TaskID})
+
+	if err != nil {
+		fmt.Printf("Can not get comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	all := []comments.GetCommentRequest{}
+
+	for _, el := range result {
+		all = append(all, el)
+	}
+
+	response, err := json.Marshal(&all)
+	if err != nil {
+		fmt.Printf("Can not marshal response whith getting comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	w.Write(response)
 }

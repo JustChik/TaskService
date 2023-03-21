@@ -40,15 +40,21 @@ func NewService(db *sql.DB, tableName string) *Service {
 
 func (c *Service) CreateNewComment(commentCreate CreateCommentRequest) (*Comment, error) {
 	id := uuid.New()
-	_, err := c.db.Exec(fmt.Sprintf("INSERT INTO %s (id,text,task_id) VALUES ($1,$2,$3);", c.tableName), id.String(), commentCreate.Text, commentCreate.TaskID)
+	now := time.Now()
+	_, err := c.db.Exec(fmt.Sprintf("INSERT INTO %s (id,text,task_id, created_at) VALUES ($1,$2,$3, $4);", c.tableName), id.String(), commentCreate.Text, commentCreate.TaskID, now)
 	if err != nil {
 		return nil, fmt.Errorf("can't create comment %v", err)
 	}
-	return nil, nil
+	return &Comment{
+		Id:     id,
+		Text:   commentCreate.Text,
+		Data:   now,
+		TaskID: commentCreate.TaskID,
+	}, nil
 }
 
 func (c *Service) GetComments(taskID uuid.UUID) ([]GetCommentRequest, error) {
-	all, err := c.db.Query(fmt.Sprintf("SELECT id, text, date FROM %s WHERE task_id = '%s' ORDER BY date ASC;", c.tableName, taskID))
+	all, err := c.db.Query(fmt.Sprintf("SELECT id, text, created_at FROM %s WHERE task_id = '%s' ORDER BY created_at ASC;", c.tableName, taskID))
 	if err != nil {
 		return nil, fmt.Errorf("can't get commets %v", err)
 	}
