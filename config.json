@@ -1,6 +1,6 @@
 {
   "db": {
-    "host": "localhost",
+    "host": "postgresql",
     "user": "postgres",
     "password":  "postgres",
     "db_name": "postgres",

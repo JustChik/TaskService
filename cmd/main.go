@@ -9,6 +9,7 @@ import (
 	"TaskService/users"
 	"encoding/json"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +27,7 @@ type (
 )
 
 func main() {
+	log.Print("Start")
 	config, err := GetConfig()
 	if err != nil {
 		log.Fatalln(err)
@@ -45,7 +47,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	httpHandlerSvc.SetHandlersToMux(mux)
-
+	log.Print("Start listening http")
 	http.ListenAndServe(fmt.Sprintf(":%d", config.HttpPort), mux)
 }
 

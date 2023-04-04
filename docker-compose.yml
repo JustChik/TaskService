@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  postgresql:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+
+  app:
+    build: .
+    image: app
+    ports:
+     - "8000:8000"
+    depends_on:
+      - postgresql
