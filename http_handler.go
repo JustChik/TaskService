@@ -4,11 +4,14 @@ import (
 	"TaskService/comments"
 	"TaskService/processing"
 	"TaskService/tasks"
+	"TaskService/users"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -66,6 +69,11 @@ func (app *AppHandler) handleCreateUser(w http.ResponseWriter, req *http.Request
 
 	if err != nil {
 		fmt.Printf("Can not create user: %v", err)
+		if errors.Is(users.ErrorInvalidEmail, err) {
+			http.Error(w, "invalid email", http.StatusBadRequest)
+			log.Printf("invalid email:%s", createReq.UserName)
+			return
+		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -115,6 +123,16 @@ func (app *AppHandler) handleGetUser(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		fmt.Printf("Can not get user: %v", err)
+		if errors.Is(users.ErrorInvalidEmail, err) {
+			http.Error(w, "invalid email", http.StatusBadRequest)
+			log.Printf("invalid email:%s", getReq.UserName)
+			return
+		}
+		if errors.Is(users.ErrorNotFound, err) {
+			http.Error(w, "user doesn't exist", http.StatusNotFound)
+			log.Printf("user doesn't exist:%s", getReq.UserName)
+			return
+		}
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

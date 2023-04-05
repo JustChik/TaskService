@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"net/mail"
 )
 
 var (
-	ErrorDuplicated = errors.New("already exist")
-	ErrorNotFound   = errors.New("not found")
-	ErrorPass       = errors.New("wrong password")
+	ErrorDuplicated   = errors.New("already exist")
+	ErrorNotFound     = errors.New("not found")
+	ErrorPass         = errors.New("wrong password")
+	ErrorInvalidEmail = errors.New("invalid email")
 )
 
 const (
@@ -41,6 +43,9 @@ func NewService(db *sql.DB, tableName, key string) *Service {
 }
 
 func (s *Service) Create(username, pass string) (*User, error) {
+	if !validateEmail(username) {
+		return nil, ErrorInvalidEmail
+	}
 	id := uuid.New()
 	hashedPass := hashPass(s.key, pass)
 	_, err := s.db.Exec(fmt.Sprintf("INSERT INTO %s (id,username,password) VALUES ($1, $2, $3);", s.tableName), id.String(), username, hashedPass)
@@ -58,6 +63,9 @@ func (s *Service) Create(username, pass string) (*User, error) {
 }
 
 func (s *Service) GetUser(username, pass string) (*User, error) {
+	if !validateEmail(username) {
+		return nil, ErrorInvalidEmail
+	}
 	hashedPass := hashPass(s.key, pass)
 	res := s.db.QueryRow(fmt.Sprintf("SELECT id, username, password FROM %s WHERE username = $1;", s.tableName), username)
 	type RawUser struct {
@@ -102,6 +110,11 @@ func (s *Service) GetAllUsers() ([]User, error) {
 	}
 
 	return res, nil
+}
+
+func validateEmail(email string) bool {
+	_, err := mail.ParseAddress(email)
+	return err == nil
 }
 
 func hashPass(key, pass string) string {
