@@ -10,5 +10,9 @@
   "users_table_name": "users",
   "tasks_table_name": "tasks",
   "comments_table_name": "comments",
-  "http_port": 8000
+  "http_port": 8000,
+  "username": "taskserviccode@gmail.com",
+  "smtp_password": "bdmjshfdeoezfmwj",
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": "587"
 }

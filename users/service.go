@@ -132,7 +132,6 @@ func (s *Service) ResetCode(username string) (string, error) {
 		b.WriteRune(chars[rand.Intn(len(chars))])
 	}
 	str := b.String() // Например "ExcbsVQs"
-	fmt.Println(str)
 	hashedPass := hashPass(str, username)
 	_, err := s.db.Exec(fmt.Sprintf("UPDATE  %s SET resetpasswordtoken = $1 WHERE username = $2;", s.tableName), hashedPass, username)
 	if err != nil {

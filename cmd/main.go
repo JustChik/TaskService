@@ -3,6 +3,7 @@ package main
 import (
 	"TaskService"
 	"TaskService/comments"
+	"TaskService/mailsender"
 	"TaskService/processing"
 	"TaskService/storage"
 	"TaskService/tasks"
@@ -23,6 +24,10 @@ type (
 		TasksTableName    string                   `json:"tasks_table_name"`
 		CommentsTableName string                   `json:"comments_table_name"`
 		HttpPort          int                      `json:"http_port"`
+		Username          string                   `json:"username"`
+		SmtpPassword      string                   `json:"smtp_password"`
+		SmtpHost          string                   `json:"smtp_host"`
+		SmtpPort          string                   `json:"smtp_port"`
 	}
 )
 
@@ -37,17 +42,18 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
+	mailSvc := mailsender.NewMailSender(config.Username, config.SmtpPassword, config.SmtpHost, config.SmtpPort)
 	userSvc := users.NewService(db, config.UsersTableName, config.Key)
 	taskSvc := tasks.NewService(db, config.TasksTableName)
 	commentsSvc := comments.NewService(db, config.CommentsTableName)
 
-	proc := processing.NewService(userSvc, taskSvc, commentsSvc)
+	proc := processing.NewService(userSvc, taskSvc, commentsSvc, mailSvc)
 	httpHandlerSvc := TaskService.NewAppHandler(proc)
-
 	mux := http.NewServeMux()
 	httpHandlerSvc.SetHandlersToMux(mux)
+
 	log.Print("Start listening http")
+
 	http.ListenAndServe(fmt.Sprintf(":%d", config.HttpPort), mux)
 }
 

@@ -2,6 +2,7 @@ package processing
 
 import (
 	"TaskService/comments"
+	"TaskService/mailsender"
 	"TaskService/tasks"
 	"TaskService/users"
 	"fmt"
@@ -13,6 +14,7 @@ type (
 		usersSVC    *users.Service
 		tasksSVC    *tasks.Service
 		commentsSVC *comments.Service
+		mailSVC     *mailsender.Mailsender
 	}
 	UserInfo struct {
 		UserName string
@@ -59,11 +61,12 @@ type (
 	}
 )
 
-func NewService(usersSVC *users.Service, tasksSVC *tasks.Service, commentsSVC *comments.Service) *Service {
+func NewService(usersSVC *users.Service, tasksSVC *tasks.Service, commentsSVC *comments.Service, mailSVC *mailsender.Mailsender) *Service {
 	return &Service{
 		usersSVC:    usersSVC,
 		tasksSVC:    tasksSVC,
 		commentsSVC: commentsSVC,
+		mailSVC:     mailSVC,
 	}
 }
 
@@ -164,6 +167,10 @@ func (p *Service) CreateComment(user UserInfo, createComment CreateCommentReques
 		TaskID: createComment.TaskID,
 		Text:   createComment.Text,
 	})
+}
+
+func (p *Service) SendMail(to, body, subject string) error {
+	return p.mailSVC.Send(to, body, subject)
 }
 
 func (p *Service) GetComments(user UserInfo, getComment GetCommentRequst) ([]comments.GetCommentRequest, error) {

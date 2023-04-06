@@ -640,7 +640,7 @@ func (app *AppHandler) handleResetCodeGen(w http.ResponseWriter, req *http.Reque
 		UserName: resetReq.UserName,
 	})
 	if err != nil {
-		fmt.Printf("Can not generate reset code: %v", err)
+		fmt.Printf("Can't generate reset code: %v", err)
 		if errors.Is(users.ErrorInvalidEmail, err) {
 			http.Error(w, "invalid email", http.StatusBadRequest)
 			log.Printf("invalid email:%s", resetReq.UserName)
@@ -649,18 +649,15 @@ func (app *AppHandler) handleResetCodeGen(w http.ResponseWriter, req *http.Reque
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	type resetCodeRespose struct {
-		Code string `json:"code"`
-	}
-	r := resetCodeRespose{
-		Code: result,
-	}
-	response, err := json.Marshal(&r)
+	err = app.proc.SendMail(resetReq.UserName, result, "Your reset code")
 	if err != nil {
-		fmt.Printf("Can not marshal response whith generate reset code: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		fmt.Printf("Can't send email: %v", err)
+		http.Error(w, "Can't send email", http.StatusBadRequest)
 		return
 	}
+
+	var str = "code send to your email"
+	response := []byte(str)
 
 	w.Write(response)
 }
