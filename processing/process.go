@@ -19,6 +19,12 @@ type (
 		UserPass string
 	}
 
+	ChangePass struct {
+		UserName string
+		NewPass  string
+		Code     string
+	}
+
 	TaskInfo struct {
 		UserID      uuid.UUID
 		Tittle      string
@@ -71,6 +77,14 @@ func (p *Service) GetUser(req UserInfo) (*users.User, error) {
 
 func (p *Service) GetAllUsers() ([]users.User, error) {
 	return p.usersSVC.GetAllUsers()
+}
+
+func (p *Service) ResetCodeUser(req UserInfo) (string, error) {
+	return p.usersSVC.ResetCode(req.UserName)
+}
+
+func (p *Service) ChangePasswordUser(req ChangePass) (string, error) {
+	return p.usersSVC.ChangePassword(req.UserName, req.Code, req.NewPass)
 }
 
 func (p *Service) CreateTask(user UserInfo, taskInfo TaskInfo) (*tasks.Task, error) {

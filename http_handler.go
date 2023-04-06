@@ -37,6 +37,8 @@ func (app *AppHandler) SetHandlersToMux(mux *http.ServeMux) {
 	mux.HandleFunc("/tasks/get/task", app.handleGetTask)
 	mux.HandleFunc("/tasks/create/comment", app.handleCreateComment)
 	mux.HandleFunc("/tasks/get/comment", app.handleGetComments)
+	mux.HandleFunc("/users/reset/gen", app.handleResetCodeGen)
+	mux.HandleFunc("/users/reset/pass", app.handleResetPass)
 }
 
 func (app *AppHandler) handleCreateUser(w http.ResponseWriter, req *http.Request) {
@@ -609,6 +611,110 @@ func (app *AppHandler) handleGetComments(w http.ResponseWriter, req *http.Reques
 	response, err := json.Marshal(&all)
 	if err != nil {
 		fmt.Printf("Can not marshal response whith getting comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (app *AppHandler) handleResetCodeGen(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	type resetCodeRequest struct {
+		UserName string `json:"user_name"`
+	}
+	rawBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	resetReq := resetCodeRequest{}
+	if err = json.Unmarshal(rawBody, &resetReq); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	result, err := app.proc.ResetCodeUser(processing.UserInfo{
+		UserName: resetReq.UserName,
+	})
+	if err != nil {
+		fmt.Printf("Can not generate reset code: %v", err)
+		if errors.Is(users.ErrorInvalidEmail, err) {
+			http.Error(w, "invalid email", http.StatusBadRequest)
+			log.Printf("invalid email:%s", resetReq.UserName)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	type resetCodeRespose struct {
+		Code string `json:"code"`
+	}
+	r := resetCodeRespose{
+		Code: result,
+	}
+	response, err := json.Marshal(&r)
+	if err != nil {
+		fmt.Printf("Can not marshal response whith generate reset code: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (app *AppHandler) handleResetPass(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	type resetPassRequest struct {
+		UserName string `json:"user_name"`
+		Code     string `json:"code"`
+		NewPass  string `json:"new_pass"`
+	}
+
+	rawBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	resetReq := resetPassRequest{}
+	if err = json.Unmarshal(rawBody, &resetReq); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	result, err := app.proc.ChangePasswordUser(processing.ChangePass{
+		UserName: resetReq.UserName,
+		Code:     resetReq.Code,
+		NewPass:  resetReq.NewPass,
+	})
+	if err != nil {
+		fmt.Printf("Can not reset password: %v", err)
+		if errors.Is(users.ErrorInvalidEmail, err) {
+			http.Error(w, "invalid email", http.StatusBadRequest)
+			log.Printf("invalid email:%s", resetReq.UserName)
+			return
+		}
+		if errors.Is(users.ErrorResetCode, err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			log.Printf("invalid code:%s", resetReq.Code)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	type resetCodeRespose struct {
+		Successfully string `json:"successfully"`
+	}
+	r := resetCodeRespose{
+		Successfully: result,
+	}
+	response, err := json.Marshal(&r)
+	if err != nil {
+		fmt.Printf("Can not marshal response whith reset password: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

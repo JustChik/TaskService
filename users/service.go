@@ -7,14 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"log"
+	"math/rand"
 	"net/mail"
+	"strings"
+	"time"
 )
 
 var (
-	ErrorDuplicated   = errors.New("already exist")
-	ErrorNotFound     = errors.New("not found")
-	ErrorPass         = errors.New("wrong password")
-	ErrorInvalidEmail = errors.New("invalid email")
+	ErrorDuplicated       = errors.New("already exist")
+	ErrorNotFound         = errors.New("not found")
+	ErrorPass             = errors.New("wrong password")
+	ErrorInvalidEmail     = errors.New("invalid email")
+	ErrorInvalidOperation = errors.New("something go wrong")
+	ErrorResetCode        = errors.New("wrong reset code")
 )
 
 const (
@@ -110,6 +116,59 @@ func (s *Service) GetAllUsers() ([]User, error) {
 	}
 
 	return res, nil
+}
+
+func (s *Service) ResetCode(username string) (string, error) {
+	if !validateEmail(username) {
+		return "", ErrorInvalidEmail
+	}
+	rand.Seed(time.Now().UnixNano())
+	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789")
+	length := 8
+	var b strings.Builder
+	for i := 0; i < length; i++ {
+		b.WriteRune(chars[rand.Intn(len(chars))])
+	}
+	str := b.String() // Например "ExcbsVQs"
+	fmt.Println(str)
+	hashedPass := hashPass(str, username)
+	_, err := s.db.Exec(fmt.Sprintf("UPDATE  %s SET resetpasswordtoken = $1 WHERE username = $2;", s.tableName), hashedPass, username)
+	if err != nil {
+		return "", ErrorInvalidOperation
+	}
+	return str, nil
+}
+
+func (s *Service) ChangePassword(username, code, newpass string) (string, error) {
+	if !validateEmail(username) {
+		return "", ErrorInvalidEmail
+	}
+	if len(code) != 8 {
+		log.Println(code)
+		return "", ErrorResetCode
+	}
+	var hashCode string
+	chekCode := hashPass(code, username)
+	rows, err := s.db.Query(fmt.Sprintf("SELECT resetpasswordtoken FROM %s WHERE username = $1;", s.tableName), username)
+	if err != nil {
+		return "", fmt.Errorf("can't get code %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err := rows.Scan(&hashCode); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if chekCode == hashCode {
+		hashedPass := hashPass(s.key, newpass)
+		_, err := s.db.Exec(fmt.Sprintf("UPDATE %s SET password = $1,resetpasswordtoken = $2 WHERE username = $3;", s.tableName), hashedPass, "", username)
+		if err != nil {
+			return "", ErrorInvalidOperation
+		}
+	}
+	return "Пароль успешно изменён", nil
 }
 
 func validateEmail(email string) bool {
