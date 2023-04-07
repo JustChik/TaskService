@@ -74,7 +74,8 @@ ALTER TABLE public.tasks OWNER TO postgres;
 CREATE TABLE public.users (
     id uuid NOT NULL,
     username character varying(50),
-    password character varying(128)
+    password character varying(128),
+    resetpasswordtoken character varying(256)
 );
 
 

@@ -1,0 +1,256 @@
+Запрос на создание юзера  handleCreateUser  /users/create
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Ответ
+
+{"id":"uuid"}
+
+
+Запрос на получение юзера / авторизация handleGetUser  /users/get
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Ответ
+
+{"id":"uuid","UserName":"string"}
+
+Запрос на получение всех юзеров  handleGetAllUsers /users/get/all
+
+пустой
+
+Ответ
+
+[{"ID":"uuid","Name":"string"},{"ID":"uuid","Name":"string"}]
+
+
+Запрос на создание задачи handleCreateTask
+
+Сначало  handleGetUser  /users/get (вытягивать из хедера авторизации)
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Потом сама задача handleCreateTask /tasks/create
+
+{
+    "tittle": "string",
+    "description": "string"
+}
+
+Ответ
+
+{
+    "Id":"uuid",
+    "Tittle":"string",
+    "Description":"string",
+    "Status":"Open"
+}
+
+
+Запрос на изменнение задачи  handleChangeTask /tasks/change/task
+
+Сначало handleGetUser  /users/get (вытягивать из хедера авторизации)
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Потом сама задача handleChangeTask /tasks/change/task
+
+{
+
+    "user_id":"56ecc60d-8d04-4447-b34f-5c312e377100",
+    "task_id":"c429615c-d25f-4d45-933c-6af86b07f1bc",
+    "tittle": "New task",
+    "description": "Test task"
+}
+
+Ответ измененая задача
+
+
+{
+
+    "task_id":"c429615c-d25f-4d45-933c-6af86b07f1bc",
+    "tittle": "New task",
+    "description": "Test task"
+}
+
+Запрос на получение задачи handleGetTask /tasks/get/task
+
+
+Сначало handleGetUser  /users/get   (вытягивать из хедера авторизации)
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Потом само получение задачи handleGetUser  /users/get
+
+(название,описание и статутс опциональны может быть что то одно и можно написать только начало слова он дальше сакм подберёт)
+
+{
+    "tittle" : "string",
+    "description": "string",
+    "status": "string"
+
+}
+
+Овтет масив задач юзера в зависимости от количества котрые подходят
+[
+
+    "task_id":"c429615c-d25f-4d45-933c-6af86b07f1bc",
+    "tittle": "New task",
+    "description": "Test task" ,
+    "status": "string",
+
+    "task_id":"c429615c-d25f-4d45-933c-6af86b07f1bc",
+    "tittle": "New task",
+    "description": "Test task" ,
+     "status": "string"
+]
+
+
+
+
+Запрос на изменения статутса handleChangeStatus /tasks/change/status
+
+Сначало handleGetUser  /users/get   (вытягивать из хедера авторизации)
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+передавать в запрос
+
+{
+ "task_id":"c429615c-d25f-4d45-933c-6af86b07f1bc",
+ "status": "string",
+}
+
+Ответ измёнеый статутс
+
+{
+    status: "string"
+}
+
+Запрос на создание коментария  handleCreateComment  /tasks/create/comment
+
+Сначало handleGetUser  /users/get   (вытягивать из хедера авторизации)
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Потом передаём таск id и сам комент
+
+{
+"task_id":"c429615c-d25f-4d45-933c-6af86b07f1bc",
+"text":"string"
+}
+
+ответ
+
+{
+		Id:     result.Id,
+		Text:   result.Text,
+		Data:   result.Data,
+		TaskID: result.TaskID,
+	}
+
+
+Запрос на получение коментария handleGetComments /tasks/get/comment
+
+Сначало handleGetUser  /users/get   (вытягивать из хедера авторизации)
+
+{
+    "user_name" : "string",
+    "password": "string"
+
+}
+
+Потом передаём
+
+{
+    "task_id": "uuid"
+}
+
+Ответ массив коментов
+
+[
+{
+    ID   uuid.UUID
+    Text string
+    Data time.Time
+},
+{
+    ID   uuid.UUID
+    Text string
+    Data time.Time
+}
+]
+
+
+Запрос на изменение комента handleChangeComment /tasks/change/comment
+
+{
+    "task_id": "7006209c-bfe1-4f32-b89d-8359588c3d29",
+    "comment_id":"2e8d358a-5f92-453d-a081-66913edb4c32",
+    "text": "изменён"
+
+}
+
+ответ
+
+{
+    "id":"2e8d358a-5f92-453d-a081-66913edb4c32",
+    "text":"изменён",
+    "data":"2023-04-07T14:26:24.23235626Z"
+    }
+
+
+Запрос на создание кода на восстановление handleResetCodeGen  /users/reset/gen
+
+{
+    "user_name":"string"
+}
+
+Ответ строка
+
+
+
+Запрос на востановления пароля handleResetPass /users/reset/pass
+
+
+{
+    "user_name":"string",
+    "code":"string",
+    "new_pass": "string"
+
+}
+
+овет
+
+
+{
+"successfully": "string"
+}

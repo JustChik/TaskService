@@ -43,14 +43,14 @@ type (
 		TaskID uuid.UUID
 		Status tasks.Status
 	}
-	ChekTask struct {
+	CheckTask struct {
 		TaskID uuid.UUID
 	}
 	CreateCommentRequest struct {
 		TaskID uuid.UUID
 		Text   string
 	}
-	GetCommentRequst struct {
+	GetCommentRequest struct {
 		TaskID uuid.UUID
 	}
 
@@ -58,6 +58,11 @@ type (
 		Tittle      string
 		Description string
 		Status      tasks.Status
+	}
+	ChangeCommentRequest struct {
+		TaskID    uuid.UUID
+		CommentID uuid.UUID
+		Text      string
 	}
 )
 
@@ -173,7 +178,7 @@ func (p *Service) SendMail(to, body, subject string) error {
 	return p.mailSVC.Send(to, body, subject)
 }
 
-func (p *Service) GetComments(user UserInfo, getComment GetCommentRequst) ([]comments.GetCommentRequest, error) {
+func (p *Service) GetComments(user UserInfo, getComment GetCommentRequest) ([]comments.GetCommentRequest, error) {
 	commentUser, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
 	if err != nil {
 		return nil, fmt.Errorf("can't get comments %v", err)
@@ -192,6 +197,30 @@ func (p *Service) GetComments(user UserInfo, getComment GetCommentRequst) ([]com
 
 	getComment.TaskID = commentTask[0].Id
 	return p.commentsSVC.GetComments(getComment.TaskID)
+}
+
+func (p *Service) ChangeCommentUser(user UserInfo, changeComment ChangeCommentRequest) (*comments.Comment, error) {
+	commentUser, err := p.usersSVC.GetUser(user.UserName, user.UserPass)
+	if err != nil {
+		return nil, fmt.Errorf("can't get user %v", err)
+	}
+	commentTask, err := p.tasksSVC.GetTasks(map[string]string{
+		"id":      changeComment.TaskID.String(),
+		"user_id": commentUser.ID.String(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("can't create comment %v", err)
+	}
+
+	if len(commentTask) == 0 {
+		return nil, fmt.Errorf("task does not exist")
+	}
+	changeComment.TaskID = commentTask[0].Id
+
+	return p.commentsSVC.ChangeComment(comments.ChangeCommentsRequest{
+		CommentID: changeComment.CommentID,
+		NewText:   changeComment.Text,
+	})
 }
 
 func (r GetTasksRequest) toMap() map[string]string {

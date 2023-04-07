@@ -25,9 +25,13 @@ type (
 	}
 
 	GetCommentRequest struct {
-		ID   uuid.UUID
-		Text string
-		Data time.Time
+		ID   uuid.UUID `json:"id"`
+		Text string    `json:"text"`
+		Data time.Time `json:"data"`
+	}
+	ChangeCommentsRequest struct {
+		CommentID uuid.UUID
+		NewText   string
 	}
 )
 
@@ -69,4 +73,17 @@ func (c *Service) GetComments(taskID uuid.UUID) ([]GetCommentRequest, error) {
 	}
 
 	return res, nil
+}
+
+func (c *Service) ChangeComment(commentChange ChangeCommentsRequest) (*Comment, error) {
+	now := time.Now()
+	_, err := c.db.Exec(fmt.Sprintf("UPDATE %s SET  text=$1, created_at=$2 WHERE id = $3 ;", c.tableName), commentChange.NewText, now, commentChange.CommentID)
+	if err != nil {
+		return nil, fmt.Errorf("can't change commet %v", err)
+	}
+	return &Comment{
+		Id:   commentChange.CommentID,
+		Text: commentChange.NewText,
+		Data: now,
+	}, nil
 }

@@ -20,10 +20,10 @@ type (
 		tableName string
 	}
 	Task struct {
-		Id          uuid.UUID
-		Tittle      string
-		Description string
-		Status      Status
+		Id          uuid.UUID `json:"id"`
+		Tittle      string    `json:"tittle"`
+		Description string    `json:"description"`
+		Status      Status    `json:"status"`
 	}
 	CreateTaskRequest struct {
 		UserID      uuid.UUID

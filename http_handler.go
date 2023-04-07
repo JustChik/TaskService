@@ -36,6 +36,7 @@ func (app *AppHandler) SetHandlersToMux(mux *http.ServeMux) {
 	mux.HandleFunc("/tasks/change/status", app.handleChangeStatus)
 	mux.HandleFunc("/tasks/get/task", app.handleGetTask)
 	mux.HandleFunc("/tasks/create/comment", app.handleCreateComment)
+	mux.HandleFunc("/tasks/change/comment", app.handleChangeComment)
 	mux.HandleFunc("/tasks/get/comment", app.handleGetComments)
 	mux.HandleFunc("/users/reset/gen", app.handleResetCodeGen)
 	mux.HandleFunc("/users/reset/pass", app.handleResetPass)
@@ -140,7 +141,7 @@ func (app *AppHandler) handleGetUser(w http.ResponseWriter, req *http.Request) {
 	}
 	type getUserResponse struct {
 		ID       uuid.UUID `json:"id"`
-		UserName string
+		UserName string    `json:"user_name"`
 	}
 
 	r := getUserResponse{
@@ -243,10 +244,10 @@ func (app *AppHandler) handleCreateTask(w http.ResponseWriter, req *http.Request
 		return
 	}
 	type createTaskResponse struct {
-		Id          uuid.UUID
-		Tittle      string
-		Description string
-		Status      tasks.Status
+		Id          uuid.UUID    `json:"id"`
+		Tittle      string       `json:"tittle"`
+		Description string       `json:"description"`
+		Status      tasks.Status `json:"status"`
 	}
 	r := createTaskResponse{
 		Id:          result.Id,
@@ -319,9 +320,9 @@ func (app *AppHandler) handleChangeTask(w http.ResponseWriter, req *http.Request
 		return
 	}
 	type changeTaskResponse struct {
-		Id          uuid.UUID
-		Tittle      string
-		Description string
+		Id          uuid.UUID `json:"id"`
+		Tittle      string    `json:"tittle"`
+		Description string    `json:"description"`
 	}
 	r := changeTaskResponse{
 		Id:          result.Id,
@@ -389,7 +390,7 @@ func (app *AppHandler) handleChangeStatus(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	type changeStatusResponse struct {
-		Status tasks.Status
+		Status tasks.Status `json:"status"`
 	}
 	r := changeStatusResponse{
 		Status: result,
@@ -522,16 +523,16 @@ func (app *AppHandler) handleCreateComment(w http.ResponseWriter, req *http.Requ
 	})
 
 	if err != nil {
-		fmt.Printf("Can not create comment: %v", err)
+		fmt.Printf("Can't create comment: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	type createCommentResponse struct {
-		Id     uuid.UUID
-		Text   string
-		Data   time.Time
-		TaskID uuid.UUID
+		Id     uuid.UUID `json:"id"`
+		Text   string    `json:"text"`
+		Data   time.Time `json:"data"`
+		TaskID uuid.UUID `json:"task_id"`
 	}
 
 	r := createCommentResponse{
@@ -539,6 +540,83 @@ func (app *AppHandler) handleCreateComment(w http.ResponseWriter, req *http.Requ
 		Text:   result.Text,
 		Data:   result.Data,
 		TaskID: result.TaskID,
+	}
+
+	response, err := json.Marshal(&r)
+	if err != nil {
+		fmt.Printf("Can not marshal response whith creating comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(response)
+}
+
+func (app *AppHandler) handleChangeComment(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	auth := req.Header.Get("Authorization")
+	auth = strings.ReplaceAll(auth, "Basic ", "")
+	decodedAuth, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	authSlice := strings.Split(string(decodedAuth), ":")
+	if len(authSlice) < 2 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	username := authSlice[0]
+	pass := authSlice[1]
+
+	type changeCommentRequest struct {
+		TaskID    uuid.UUID `json:"task_id"`
+		CommentID uuid.UUID `json:"comment_id"`
+		Text      string    `json:"text"`
+	}
+
+	rawBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	changeReq := changeCommentRequest{}
+	if err = json.Unmarshal(rawBody, &changeReq); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	result, err := app.proc.ChangeCommentUser(processing.UserInfo{
+		UserName: username,
+		UserPass: pass,
+	}, processing.ChangeCommentRequest{
+		TaskID:    changeReq.TaskID,
+		CommentID: changeReq.CommentID,
+		Text:      changeReq.Text,
+	})
+
+	if err != nil {
+		fmt.Printf("Can't change comment: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	type createCommentResponse struct {
+		Id   uuid.UUID `json:"id"`
+		Text string    `json:"text"`
+		Data time.Time `json:"data"`
+	}
+
+	r := createCommentResponse{
+		Id:   result.Id,
+		Text: result.Text,
+		Data: result.Data,
 	}
 
 	response, err := json.Marshal(&r)
@@ -593,7 +671,7 @@ func (app *AppHandler) handleGetComments(w http.ResponseWriter, req *http.Reques
 	result, err := app.proc.GetComments(processing.UserInfo{
 		UserName: username,
 		UserPass: pass,
-	}, processing.GetCommentRequst{
+	}, processing.GetCommentRequest{
 		TaskID: getReq.TaskID})
 
 	if err != nil {

@@ -46,7 +46,6 @@ func main() {
 	userSvc := users.NewService(db, config.UsersTableName, config.Key)
 	taskSvc := tasks.NewService(db, config.TasksTableName)
 	commentsSvc := comments.NewService(db, config.CommentsTableName)
-
 	proc := processing.NewService(userSvc, taskSvc, commentsSvc, mailSvc)
 	httpHandlerSvc := TaskService.NewAppHandler(proc)
 	mux := http.NewServeMux()

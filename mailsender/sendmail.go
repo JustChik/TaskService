@@ -40,7 +40,8 @@ func (m *Mailsender) Send(to, body, subject string) error {
 		"\r\n" + body +
 		"\r\n")
 
-	err = smtp.SendMail(m.SmtpHost+":"+m.SmtpPort, auth, m.UserName, []string{toAddress.String()}, msg)
+	err = smtp.SendMail(m.SmtpHost+":"+m.SmtpPort, auth, m.UserName, []string{toAddress.Address}, msg)
+
 	if err != nil {
 		return fmt.Errorf("Can't send email  %v", err)
 	}
